@@ -5,15 +5,25 @@
 #include<math.h>
 #include<stdlib.h>
 
-typedef struct CIDR {
+#define DISPLAY_CIDR(cidr) \
+    printf("%u.%u.%u.%u\n", *((uint8_t*)&cidr+3), *((uint8_t*)&cidr+2), *((uint8_t*)&cidr+1), *((uint8_t*)&cidr));
+
+
+typedef uint32_t CIDR;
+
+typedef struct CIDRf {
     uint8_t oct1;
     uint8_t oct2;
     uint8_t oct3;
     uint8_t oct4;
-} CIDR;
+} CIDRf;
 
-CIDR convertStringToIP(char* ip) {
-    int ipLen = strlen(ip);
+void displayCIDR(CIDR cidr) {
+    printf("%u.%u.%u.%u\n", *((uint8_t*)&cidr+3), *((uint8_t*)&cidr+2), *((uint8_t*)&cidr+1), *((uint8_t*)&cidr));
+}
+
+CIDR convertToCIDR(char* ip) {
+        int ipLen = strlen(ip);
     char currentOctet[4];
     CIDR IP;
     int octetIndex = 0;
@@ -23,7 +33,7 @@ CIDR convertStringToIP(char* ip) {
         if ( *(ip+i) == '.') {
             octetIndex = 0;
 
-            *(((char*)&IP) + (octetNum)) = (uint8_t)atoi(currentOctet);
+            *(((char*)&IP) + (3 - octetNum)) = (uint8_t)atoi(currentOctet);
 
             octetNum += 1;
             memset(currentOctet, 0, 4);
@@ -35,59 +45,30 @@ CIDR convertStringToIP(char* ip) {
     }
 
     // To get the last octet
-    *(((char*)&IP) + (octetNum)) = (uint8_t)atoi(currentOctet);
+    *((char*)&IP) = (uint8_t)atoi(currentOctet);
     return IP;
 }
 
-CIDR createSubnetmask(int prefix) {
-    CIDR subnetmask;
-    for (int i = 0; i < prefix/8; i++) {
-        *((char*)&subnetmask+i) = 255;
-    }
 
-    int remiander = prefix % 8;
-
-    for (int i = 0; i < remiander; i++) {
-        *((char*)&subnetmask + prefix/8) |= (1 << 7 - i);
+CIDR createSubnetmask(uint8_t prefix) {
+    CIDR subnetmask = 0;
+    
+    for (int i = 0; i < prefix; i++) {
+        subnetmask |= (1 << 31 - i);
     }
 
     return subnetmask;
 }
 
-CIDR getNetworkName(CIDR* givenAddr, CIDR* subnetmask) {
-    CIDR networkName = {
-        givenAddr->oct1 & subnetmask->oct1,
-        givenAddr->oct2 & subnetmask->oct2,
-        givenAddr->oct3 & subnetmask->oct3,
-        givenAddr->oct4 & subnetmask->oct4
-    };
-
-    return networkName;
-}
-
-uint8_t getMagicNumber(CIDR* subnetmask) {
-    int leadingOctetOffset = (subnetmask->oct1 + subnetmask->oct2 + subnetmask->oct3 + subnetmask->oct4) / 255 - 1;
-    uint8_t magicNum;
-
-    for (int i = 0; i < 8; i++) {
-        if ( (*((char*)&subnetmask + leadingOctetOffset) >> i & 1) == 1) {
-            magicNum = pow(2,i);
-            break;
-        };
-    }
-
-    return magicNum;
-}
-
-void generateReport(CIDR networkName, CIDR* subnetmask, uint8_t prefix) {
+void generateReport(CIDR* networkName, CIDR* subnetmask, uint8_t prefix, unsigned int amount) {
     unsigned int maxHosts = pow(2, 32 - prefix) - 2;
 
-    printf("Max Hosts: %u\n", maxHosts);
-    
-    *((uint32_t*)&networkName) += 1;
-
-    printf("Last: %u.%u.%u.%u\n", networkName.oct1, networkName.oct2, networkName.oct3, networkName.oct4);
-
+    for (int i = 0; i < amount; i++) {
+        printf("NN   | "); displayCIDR((*networkName) + (maxHosts+2) * i);
+        printf("1st  | "); displayCIDR(*(networkName) + 1 + (maxHosts+2) * i);
+        printf("Last | "); displayCIDR(*(networkName) + maxHosts + (maxHosts+2) * i);
+        printf("\n");
+    }
 }
 
 int vaildateInput(char* givenIP) {
@@ -104,12 +85,18 @@ int main(int agrc, char** argv) {
     char* amountArg = *(argv+3);
 
     uint8_t prefix = atoi(prefixArg);
+    int amount = atoi(amountArg);
     
-    CIDR givenIP = convertStringToIP(ipArg);
-    CIDR subnet = createSubnetmask(prefix);
-    CIDR networkName = getNetworkName(&givenIP, &subnet);
+    if (prefix == 0) {
+        printf("Invalid prefix");
+        return 1;
+    }
+
+    CIDR givenIP = convertToCIDR(ipArg);    CIDR subnetmask = createSubnetmask(prefix);
+    CIDR networkName = givenIP & subnetmask;
     
-    generateReport(networkName, &subnet, prefix);
+    generateReport(&networkName, &subnetmask, prefix, amount);
+    
     
 
     return 0;
