@@ -10,13 +10,13 @@
 
 typedef uint32_t CIDR;
 typedef enum IPClass {
-    CLASS_A,
-    CLASS_B,
-    CLASS_C,
-    CLASS_D,
-    CLASS_E,
-    CLASS_LOOPBACK,
-    CLASS_INVALID
+    CLASS_A = 'A',
+    CLASS_B = 'B',
+    CLASS_C = 'C',
+    CLASS_D = 'D',
+    CLASS_E = 'E',
+    CLASS_LOOPBACK = 'L',
+    CLASS_INVALID = '?'
 } IPClass;
 
 typedef enum IPType {
@@ -103,8 +103,19 @@ void setIPClass(IPinfo* ipInfo) {
     }
 }
 
-IPType setType(CIDR givenIP) {
-
+void setType(IPinfo* ipInfo) {
+    if (ipInfo->givenIP >= 167772160 && ipInfo->givenIP <= 184549375) {
+        ipInfo->ipType = PRIVATE; 
+    }
+    else if (ipInfo->givenIP >= 2886729728 && ipInfo->givenIP <= 2887778303) {
+        ipInfo->ipType = PRIVATE;
+    }
+    else if (ipInfo->givenIP >= 3232235520 && ipInfo->givenIP <= 3232301055) {
+        ipInfo->ipType = PRIVATE;
+    }
+    else {
+        ipInfo->ipType = PUBLIC;
+    }
 }
 
 void generateReport(IPinfo* ipInfo) {
@@ -112,11 +123,21 @@ void generateReport(IPinfo* ipInfo) {
 
     printf("IP Address: "); displayCIDR(ipInfo->givenIP); printf("\n");
     printf("Network Address: "); displayCIDR(ipInfo->networkAddress); printf("\n");
+    printf("Subnetmask: "); displayCIDR(ipInfo->subnetmask); printf("\n");
     printf("Host IP Range: "); displayCIDR(ipInfo->networkAddress+1); printf(" - "); displayCIDR(ipInfo->networkAddress+maxHosts); printf("\n");
     printf("Broadcast Address: "); displayCIDR(ipInfo->networkAddress+maxHosts+1); printf("\n");
     printf("Next Subnet: "); displayCIDR(ipInfo->networkAddress+maxHosts+2); printf("\n");
-    printf("IP Class: %d", ipInfo->ipClass);
-    printf("IP Type: %d", ipInfo->ipType);
+    printf("Host amount: %u\n", maxHosts);
+    printf("IP Class: %c\n", ipInfo->ipClass);
+    printf("IP Type: "); 
+
+    if (ipInfo->ipType == PRIVATE) {
+        printf("Private\n");
+    }
+    else {
+        printf("Public\n");
+    }
+
 }
 
 int vaildateInput(char* givenIP) {
@@ -139,10 +160,11 @@ int main(int agrc, char** argv) {
     }
 
     IPinfo ipInfo;
-
+    ipInfo.prefix = prefix;
     setGivenIP(&ipInfo, ipArg);    
     setSubnetmask(&ipInfo, prefix);
     setIPClass(&ipInfo);
+    setType(&ipInfo);
     ipInfo.networkAddress = ipInfo.givenIP & ipInfo.subnetmask;
     
     generateReport(&ipInfo);
