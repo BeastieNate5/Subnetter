@@ -41,6 +41,23 @@ void displayCIDR(CIDR cidr) {
     printf("%u.%u.%u.%u", *((uint8_t*)&cidr+3), *((uint8_t*)&cidr+2), *((uint8_t*)&cidr+1), *((uint8_t*)&cidr));
 }
 
+void displayBinaryCIDR(CIDR cidr) {
+    uint8_t currentOctet = 0;
+    for (int i = 3; i >= 0; i--) {
+        currentOctet = *((uint8_t*)&cidr+i);
+        for (int x = 0; x < 8; x++) {
+            if (currentOctet & (128 >> x)) {
+                printf("1");
+            }
+            else {
+                printf("0");
+            }
+        }
+        
+        if (i != 0) { printf("."); }
+    }
+}
+
 void setGivenIP(IPinfo* ipInfo, char* ip) {
     int ipLen = strlen(ip);
     char currentOctet[4];
@@ -124,7 +141,7 @@ void generateReport(IPinfo* ipInfo) {
     printf("IP Address: "); displayCIDR(ipInfo->givenIP); printf("\n");
     printf("Network Address: "); displayCIDR(ipInfo->networkAddress); printf("\n");
     printf("Subnetmask: "); displayCIDR(ipInfo->subnetmask); printf("\n");
-    printf("Host IP Range: "); displayCIDR(ipInfo->networkAddress+1); printf(" - "); displayCIDR(ipInfo->networkAddress+maxHosts); printf("\n");
+    printf("Host IP Range: "); (maxHosts > 0) ? displayCIDR(ipInfo->networkAddress+1) : displayCIDR(ipInfo->networkAddress) ; printf(" - "); displayCIDR(ipInfo->networkAddress+maxHosts); printf("\n");
     printf("Broadcast Address: "); displayCIDR(ipInfo->networkAddress+maxHosts+1); printf("\n");
     printf("Next Subnet: "); displayCIDR(ipInfo->networkAddress+maxHosts+2); printf("\n");
     printf("Host amount: %u\n", maxHosts);
@@ -137,6 +154,9 @@ void generateReport(IPinfo* ipInfo) {
     else {
         printf("Public\n");
     }
+
+    printf("Binary Network Address: "); displayBinaryCIDR(ipInfo->networkAddress); printf("\n");
+    printf("Binary Subnetmask: "); displayBinaryCIDR(ipInfo->subnetmask); printf("\n");
 
 }
 
@@ -155,7 +175,7 @@ int main(int agrc, char** argv) {
     uint8_t prefix = atoi(prefixArg);
     
     if (prefix <= 0 || prefix >= 32) {
-        printf("Invalid prefix");
+        printf("Invalid prefix\n");
         return 1;
     }
 
@@ -167,7 +187,9 @@ int main(int agrc, char** argv) {
     setType(&ipInfo);
     ipInfo.networkAddress = ipInfo.givenIP & ipInfo.subnetmask;
     
+    printf("\n");
     generateReport(&ipInfo);
+    printf("\n");
     
     return 0;
 }
