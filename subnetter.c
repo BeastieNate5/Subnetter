@@ -166,7 +166,7 @@ int vaildateInput(char* givenIP) {
 
 int main(int agrc, char** argv) {
     if (agrc != 3) {
-        printf("<TOOLNAME> <IP> <CIDR Prefix>");
+        printf("subnetter <IP> <CIDR Prefix>");
     }
 
     char* ipArg = *(argv+1);
