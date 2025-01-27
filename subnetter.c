@@ -124,6 +124,9 @@ void setType(IPinfo* ipInfo) {
     if (ipInfo->givenIP >= 167772160 && ipInfo->givenIP <= 184549375) {
         ipInfo->ipType = PRIVATE; 
     }
+    else if (ipInfo->givenIP >= 2130706432 && ipInfo->givenIP <= 2147483647) {
+        ipInfo->ipType = LOOPBACK;
+    }
     else if (ipInfo->givenIP >= 2886729728 && ipInfo->givenIP <= 2887778303) {
         ipInfo->ipType = PRIVATE;
     }
@@ -150,6 +153,9 @@ void generateReport(IPinfo* ipInfo) {
 
     if (ipInfo->ipType == PRIVATE) {
         printf("Private\n");
+    }
+    else if (ipInfo->ipType == LOOPBACK) {
+        printf("Loopback\n"); 
     }
     else {
         printf("Public\n");
@@ -186,7 +192,7 @@ int main(int agrc, char** argv) {
     setIPClass(&ipInfo);
     setType(&ipInfo);
     ipInfo.networkAddress = ipInfo.givenIP & ipInfo.subnetmask;
-    
+  
     printf("\n");
     generateReport(&ipInfo);
     printf("\n");
